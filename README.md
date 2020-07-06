@@ -18,6 +18,6 @@ Build it!
 
 $ make
 
-or
+## OR
 
 Download precomplied binary  https://github.com/anoop142/abextract/releases
