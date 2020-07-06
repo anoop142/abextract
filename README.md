@@ -20,4 +20,4 @@ $ make
 
 or
 
-Download precomplied binary 
+Download precomplied binary  https://github.com/anoop142/abextract/releases
