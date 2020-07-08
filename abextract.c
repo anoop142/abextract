@@ -183,6 +183,7 @@ void unpack(char *input){
     FILE *source ;
     FILE *dest;
     int ret;
+    int system_rc;
 
     /* open input file */
     source = fopen(input_file,"r");
@@ -210,7 +211,8 @@ void unpack(char *input){
     // tar extraction
     char tar_extract_command[256];
     sprintf(tar_extract_command,"tar xf %s -C %s",out_file,out_dir);
-    if(system(tar_extract_command) != -1)
+    system_rc = system(tar_extract_command);
+   if( system_rc != -1 && WEXITSTATUS(system_rc) != 127 )
     {
         fprintf(stdout,"upacked successfully!\n");
     }
