@@ -1,7 +1,7 @@
 # Abextract - ADB backup extractor tool
 
 ## Features
-abextract is a simple tool to extract backup made by android adb written in c.
+abextract is a simple tool to extract and repack backup made by  adb written in c.
 
 It relies on tar utility for  unpacking the final tar archive.
 
