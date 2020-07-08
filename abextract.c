@@ -1,7 +1,7 @@
 /* 
 Anoop S 
 
-abextract - ADB backup extractor   
+abextract - ADB backup extractor  and repacker. 
 
 Tar extraction is done is using "tar" utility.
 Encrypted  backups are not supported!.
@@ -23,10 +23,71 @@ Encrypted  backups are not supported!.
 #  define SET_BINARY_MODE(file)
 #endif
 
-#define CHUNK 16384
+#define CHUNK 10240
+#define CHECK_FILE(fptr,ptr) { if(fptr==NULL) {\
+                                perror(ptr); \
+                                exit(1);  } }
+
+
+/* Deflate  */
+int def(FILE *source, FILE *dest, int level)
+{
+    int ret, flush;
+    unsigned have;
+    z_stream strm;
+    unsigned char in[CHUNK];
+    unsigned char out[CHUNK];
+
+    /* allocate deflate state */
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+    ret = deflateInit(&strm, level);
+    if (ret != Z_OK)
+        return ret;
+    /* Write backup header */
+    const char header[] = "ANDROID BACKUP\n5\n1\nnone";
+    fwrite(header,1,sizeof(header),dest);
+
+    /* compress until end of file */
+    do {
+        strm.avail_in = fread(in, 1, CHUNK, source);
+        if (ferror(source)) {
+            (void)deflateEnd(&strm);
+            return Z_ERRNO;
+        }
+        flush = feof(source) ? Z_FINISH : Z_NO_FLUSH;
+        strm.next_in = in;
+
+        /* run deflate() on input until output buffer not full, finish
+           compression if all of source has been read in */
+        do {
+            strm.avail_out = CHUNK;
+            strm.next_out = out;
+            ret = deflate(&strm, flush);    /* no bad return value */
+            assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+            have = CHUNK - strm.avail_out;
+            if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
+                (void)deflateEnd(&strm);
+                return Z_ERRNO;
+            }
+        } while (strm.avail_out == 0);
+        assert(strm.avail_in == 0);     /* all input will be used */
+
+        /* done when last data in file processed */
+    } while (flush != Z_FINISH);
+    assert(ret == Z_STREAM_END);        /* stream will be complete */
+
+    /* clean up and return */
+    (void)deflateEnd(&strm);
+    return Z_OK;
+}
 
 
 
+
+
+/* Inflate zlib */
 int inf(FILE *source, FILE *dest)
 {
     /* skip 24 bytes */
@@ -86,6 +147,7 @@ int inf(FILE *source, FILE *dest)
     return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 }
 
+
 /* report a zlib or i/o error */
 void zerr(int ret)
 {
@@ -113,61 +175,113 @@ void zerr(int ret)
 
 
 
+
+
+void unpack(char *input){
+    char input_file[512];
+    strcpy(input_file,input);
+    FILE *source ;
+    FILE *dest;
+    int ret;
+
+    /* open input file */
+    source = fopen(input_file,"r");
+    CHECK_FILE(source,input_file);
+    /* Open output file */
+    char out_file[256];
+    char out_dir[256];
+    int skip_ext = strlen(input_file)-3;
+    strncpy(out_file,input_file,skip_ext);
+    strcpy(out_dir,out_file);
+    strcat(out_dir,"_unpacked");
+    strncat(out_file,".tar",14);
+    mkdir(out_dir,0777);
+    dest = fopen(out_file,"w");
+    CHECK_FILE(dest,out_file);
+    /* avoid end-of-line conversions */
+    SET_BINARY_MODE(source);
+    SET_BINARY_MODE(dest);
+
+
+    ret = inf(source, dest);
+    if (ret != Z_OK)
+        zerr(ret);
+
+    // tar extraction
+    char tar_extract_command[256];
+    sprintf(tar_extract_command,"tar xf %s -C %s",out_file,out_dir);
+    if(system(tar_extract_command) != -1)
+    {
+        fprintf(stdout,"upacked successfully!\n");
+    }
+    else{
+        perror("abextract");
+        exit(1);
+    }   
+
+fclose(source);
+fclose(dest); 
+}
+
+
+void print_help(const char *help_unpack, const char *help_pack){
+    fprintf(stdout,"%s%s",help_unpack,help_pack);
+    exit(0);
+}
+
+
+
+void pack_zlib(const char *input, const char *output){
+    char input_tar[512];
+    char output_file[512];
+    strcpy(input_tar,input);
+    strcpy(output_file,output);
+    FILE *source;
+    FILE *dest;
+    source = fopen(input_tar,"r");
+    CHECK_FILE(source,input_tar);
+    dest = fopen(output_file,"w");
+    CHECK_FILE(dest,output_file);
+    int ret;
+    /* avoid end-of-line conversions */
+    SET_BINARY_MODE(source);
+    SET_BINARY_MODE(dest);
+
+     ret = def(source, dest, Z_BEST_COMPRESSION);
+    if (ret != Z_OK){
+        zerr(ret);
+    }
+    fprintf(stdout,"Success!\n");
+    fclose(source);
+    fclose(dest);
+
+
+}
+
+
 int main(int argc, char **argv)
 {
-    const char *help =  "usage: abextract backup.ab\n";
-    if(argc == 2) {
-        if(strncmp(argv[1],"-h",3)== 0) 
-        {
-            fprintf(stdout,help);
-            exit(0);
-        } 
-        
-            FILE *source ;
-            FILE *dest;
-            int ret;
+    const char *help_unpack =  "Usage :\n\tunpack:       abextract unpack     <backup.ab> \n";
+    const char *help_pack =    "\tpack:         abextract pack       <backup.tar> <backup.ab>\n";
 
-            /* open input file */
-            source = fopen(argv[1],"r");
-            if( source == NULL){
-                perror(argv[1]);
-                exit(0);
-            }
-            /* Open output file */
-            char out_file[128];
-            int skip_ext = strlen(argv[1])-3;
-            strncpy(out_file,argv[1],skip_ext);
-            strncat(out_file,"_unpacked.tar",14);
-            dest = fopen(out_file,"w");
-
-
-            /* avoid end-of-line conversions */
-            SET_BINARY_MODE(source);
-            SET_BINARY_MODE(dest);
-
-
-            ret = inf(source, dest);
-            if (ret != Z_OK)
-                zerr(ret);
-            char tar_command[128]="tar xf ";
-            strcat(tar_command,out_file);
-            if(system(tar_command) != -1)
-            {
-                fprintf(stdout,"upacked successfully!\n");
-                remove(out_file);
+    if(argc >= 3) {
+        if((strcmp(argv[1],"unpack")) == 0){
+            unpack(argv[2]);
+        }
+        else if((strcmp(argv[1],"pack")) == 0){
+            if(argv[3] != NULL){
+                pack_zlib(argv[2],argv[3]);
             }
             else{
-                perror("abextract");
-            }   
-
-        fclose(source);
-        fclose(dest); 
+                print_help(help_unpack,help_pack);
+            }           
+        }
 
     }
-    
+
     else {
-        fputs(help, stderr);
-        return 1;
-    }
+        print_help(help_unpack,help_pack);
+
+        }
     
 }
