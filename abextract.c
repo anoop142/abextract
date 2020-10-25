@@ -3,7 +3,6 @@ Anoop S
 
 abextract - ADB backup extractor  and repacker. 
 
-Tar extraction is done is using "tar" utility.
 Encrypted  backups are not supported!.
 
 */
@@ -178,27 +177,25 @@ void zerr(int ret)
 
 
 void unpack(char *input){
-    char input_file[512];
-    strcpy(input_file,input);
+    char out_file[512];
+
     FILE *source ;
     FILE *dest;
     int ret;
-    int system_rc;
 
     /* open input file */
-    source = fopen(input_file,"r");
-    CHECK_FILE(source,input_file);
+    source = fopen(input,"r");
+    CHECK_FILE(source,input);
+
+    
+    strncpy(out_file,input,strlen(input)-3);
+    out_file[strlen(input)-3] = '\0';
+    strncat(out_file,".tar",5);
+
     /* Open output file */
-    char out_file[256];
-    char out_dir[256];
-    int skip_ext = strlen(input_file)-3;
-    strncpy(out_file,input_file,skip_ext);
-    strcpy(out_dir,out_file);
-    strcat(out_dir,"_unpacked");
-    strncat(out_file,".tar",14);
-    mkdir(out_dir,0777);
     dest = fopen(out_file,"w");
     CHECK_FILE(dest,out_file);
+
     /* avoid end-of-line conversions */
     SET_BINARY_MODE(source);
     SET_BINARY_MODE(dest);
@@ -208,21 +205,10 @@ void unpack(char *input){
     if (ret != Z_OK)
         zerr(ret);
 
-    // tar extraction
-    char tar_extract_command[256];
-    sprintf(tar_extract_command,"tar xf %s -C %s",out_file,out_dir);
-    system_rc = system(tar_extract_command);
-   if( system_rc != -1 && WEXITSTATUS(system_rc) != 127 )
-    {
-        fprintf(stdout,"upacked successfully!\n");
-    }
-    else{
-        perror("abextract");
-        exit(1);
-    }   
+    fprintf(stdout,"Success!\n");
 
-fclose(source);
-fclose(dest); 
+    fclose(source);
+    fclose(dest); 
 }
 
 
@@ -234,17 +220,17 @@ void print_help(const char *help_unpack, const char *help_pack){
 
 
 void pack_zlib(const char *input, const char *output){
-    char input_tar[512];
-    char output_file[512];
-    strcpy(input_tar,input);
-    strcpy(output_file,output);
+
     FILE *source;
     FILE *dest;
-    source = fopen(input_tar,"r");
-    CHECK_FILE(source,input_tar);
-    dest = fopen(output_file,"w");
-    CHECK_FILE(dest,output_file);
     int ret;
+
+    source = fopen(input,"r");
+    CHECK_FILE(source,input);
+
+    dest = fopen(output,"w");
+    CHECK_FILE(dest,output);
+    
     /* avoid end-of-line conversions */
     SET_BINARY_MODE(source);
     SET_BINARY_MODE(dest);
@@ -256,12 +242,10 @@ void pack_zlib(const char *input, const char *output){
     fprintf(stdout,"Success!\n");
     fclose(source);
     fclose(dest);
-
-
 }
 
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
     const char *help_unpack =  "Usage :\n\tunpack:       abextract unpack     <backup.ab> \n";
     const char *help_pack =    "\tpack:         abextract pack       <backup.tar> <backup.ab>\n";
