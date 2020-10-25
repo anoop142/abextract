@@ -3,12 +3,11 @@
 ## Features
 abextract is a simple tool to extract and repack backup made by  adb written in c.
 
-It relies on tar utility for  unpacking the final tar archive.
 
 ## TODO
 *Repack backup - ✅ Done! 
 
-*Encryption
+*Encryption - ❌
 
 ## Usage :
 unpack:
@@ -27,8 +26,4 @@ $ git clone https://github.com/anoop142/abextract.git
 
 Build it!
 
-$ make
-
-## OR
-
-Download precomplied binary  https://github.com/anoop142/abextract/releases
+$ make install
