@@ -23,9 +23,9 @@ Encrypted  backups are not supported!.
 #endif
 
 #define CHUNK 10240
-#define CHECK_FILE(fptr,ptr) { if(fptr==NULL) {\
-                                perror(ptr); \
-                                exit(1);  } }
+#define CHECK_FILE(fptr,ptr) do{ if(fptr==NULL) {\
+                                  perror(ptr); \
+                                  exit(1);  }} while(0)
 
 
 /* Deflate  */
