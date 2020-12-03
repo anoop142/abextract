@@ -176,8 +176,7 @@ void zerr(int ret)
 
 
 
-void unpack(char *input){
-    char out_file[512];
+void unpack(const char *input, const char *output){
 
     FILE *source ;
     FILE *dest;
@@ -188,13 +187,10 @@ void unpack(char *input){
     CHECK_FILE(source,input);
 
     
-    strncpy(out_file,input,strlen(input)-3);
-    out_file[strlen(input)-3] = '\0';
-    strncat(out_file,".tar",5);
 
     /* Open output file */
-    dest = fopen(out_file,"w");
-    CHECK_FILE(dest,out_file);
+    dest = fopen(output,"w");
+    CHECK_FILE(dest,output);
 
     /* avoid end-of-line conversions */
     SET_BINARY_MODE(source);
@@ -247,12 +243,12 @@ void pack_zlib(const char *input, const char *output){
 
 int main(int argc, char *argv[])
 {
-    const char *help_unpack =  "Usage :\n\tunpack:       abextract unpack     <backup.ab> \n";
+    const char *help_unpack =  "Usage :\n\tunpack:       abextract unpack     <backup.ab> <backup.tar> \n";
     const char *help_pack =    "\tpack:         abextract pack       <backup.tar> <backup.ab>\n";
 
-    if(argc >= 3) {
+    if(argc > 3) {
         if((strcmp(argv[1],"unpack")) == 0){
-            unpack(argv[2]);
+            unpack(argv[2],argv[3]);
         }
         else if((strcmp(argv[1],"pack")) == 0){
             if(argv[3] != NULL){
