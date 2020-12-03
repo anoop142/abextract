@@ -12,7 +12,7 @@ abextract is a simple tool to extract and repack backup made by  adb written in 
 ## Usage :
 unpack:
         
-        abextract unpack   <backup.ab>
+        abextract unpack   <backup.ab> <backup.tar>
 
 pack:
 
