@@ -45,9 +45,9 @@ int def(FILE *source, FILE *dest, int level)
     if (ret != Z_OK)
         return ret;
     /* Write backup header */
-    const char header[] = "ANDROID BACKUP\n5\n1\nnone";
+    const char header[] = "ANDROID BACKUP\n5\n1\nnone\n";
     fwrite(header,1,sizeof(header),dest);
-
+    fseek(dest, 24, SEEK_SET);
     /* compress until end of file */
     do {
         strm.avail_in = fread(in, 1, CHUNK, source);
