@@ -1,7 +1,7 @@
-# Abextract - ADB backup extractor tool
+# Abextract - ADB backup extractor and repacker tool
 
 ## Features
-abextract is a simple tool to extract and repack backup made by  adb written in c.
+abextract is a simple tool to extract and repack backup made by  adb written in C.
 
 
 ## TODO
