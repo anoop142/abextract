@@ -9,12 +9,14 @@ all: abextract
 
 
 abextract: abextract.c
-	$(CC) $(CFLAGS) $(LIBS)  abextract.c -o abextract
+	$(CC) -o abextract abextract.c $(CFLAGS) $(LIBS)
 
 
 install: all
-	strip abextract
-	cp abextract $(LOCATION)
+	install -s abextract $(LOCATION)
+
+uninstall:
+	rm $(LOCATION)/abextract
 
 clean:
 	rm -rf abextract
